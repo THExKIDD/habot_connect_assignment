@@ -1,0 +1,35 @@
+name: habot_connect_assignment
+description: "HabotConnect LSA Verification & Data Lineage Integration — Flutter hiring project (Digivir role)."
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.12.2
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  cupertino_icons: ^1.0.8
+
+  # State management — Cubit pattern (ComplianceCubit, 4-state model)
+  flutter_bloc: ^9.1.1
+
+  # HTTP client — Dio interceptor injects x-trace-id / x-logic-hash on every request
+  dio: ^5.8.0+1
+
+  # UUID v4 for x-trace-id header
+  uuid: ^4.5.1
+
+  # SHA-256 for x-logic-hash header
+  crypto: ^3.0.6
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:habot_connect_assignment/features/lsa_verification/logic/compliance_cubit/compliance_state.dart';
 
+import '../../../../core/formatters/upper_case_text_input_formatter.dart';
 import '../../../../core/logging/friction_logger.dart';
 import '../logic/compliance_cubit/compliance_cubit.dart';
 import '../widgets/header.dart';
@@ -165,15 +166,17 @@ class _LsaVerificationScreenState extends State<LsaVerificationScreen> {
                           controller: _consentController,
                           focusNode: _consentFocusNode,
                           readOnly: state is! ComplianceIdle,
+                          inputFormatters: const [
+                            UpperCaseTextInputFormatter(),
+                          ],
                         ),
                         const SizedBox(height: 20),
 
-                        // ── predecessor_id ────────────────────────────
+                        // ── predecessor_id (system — always locked) ───
                         LabeledTextField(
-                          label: 'Predecessor ID (System)',
-                          hint: 'System-assigned lineage reference',
+                          label: 'Predecessor ID',
                           controller: _predecessorController,
-                          readOnly: true,
+                          isSystemField: true,
                         ),
                         const SizedBox(height: 32),
 
@@ -227,50 +230,74 @@ class _DebugInfoCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final tt = Theme.of(context).textTheme;
+
+    final gradientColors = isDark
+        ? [const Color(0xFF0D1F17), const Color(0xFF0A1810)]
+        : [const Color(0xFFE8F5E9), const Color(0xFFF1F8E9)];
+
+    const accentGreen = Color(0xFF43A047);
 
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerLow,
+        gradient: LinearGradient(
+          colors: gradientColors,
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: colorScheme.outlineVariant),
+        border: Border.all(
+          color: accentGreen.withValues(alpha: 0.35),
+          width: 1.2,
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(
-                Icons.info_outline_rounded,
-                size: 16,
-                color: colorScheme.onSurfaceVariant,
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: accentGreen.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: const Icon(
+                  Icons.receipt_long_rounded,
+                  size: 14,
+                  color: accentGreen,
+                ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 10),
               Text(
                 'Audit Trail',
-                style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
-                      fontWeight: FontWeight.w700,
-                    ),
+                style: tt.labelMedium?.copyWith(
+                  color: accentGreen,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 0.5,
+                ),
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
           Text(
             'x-trace-id',
-            style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: colorScheme.onSurfaceVariant,
-                ),
+            style: tt.labelSmall?.copyWith(
+              color: accentGreen.withValues(alpha: 0.7),
+              letterSpacing: 0.4,
+            ),
           ),
           const SizedBox(height: 4),
           SelectableText(
             traceId,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  fontFamily: 'monospace',
-                  color: colorScheme.onSurface,
-                ),
+            style: tt.bodySmall?.copyWith(
+              fontFamily: 'monospace',
+              color: isDark ? const Color(0xFFA5D6A7) : const Color(0xFF2E7D32),
+              letterSpacing: 0.6,
+            ),
           ),
         ],
       ),

@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'api_log_interceptor.dart';
 import 'metadata_interceptor.dart';
 
 /// Class wrapping Dio HTTP client setup and options.
@@ -19,7 +20,11 @@ class ApiClient {
           ),
         );
 
+    // MetadataInterceptor first — injects headers before they are logged.
     _dio.interceptors.add(MetadataInterceptor());
+
+    // ApiLogInterceptor second — logs the fully-enriched request + response.
+    _dio.interceptors.add(ApiLogInterceptor());
   }
 
   /// Returns underlying Dio instance.

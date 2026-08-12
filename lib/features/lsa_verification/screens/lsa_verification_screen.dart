@@ -3,11 +3,12 @@ import 'dart:developer' as dev;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:habot_connect_assignment/features/lsa_verification/logic/compliance_cubit/compliance_cubit.dart';
 import 'package:habot_connect_assignment/features/lsa_verification/logic/compliance_cubit/compliance_state.dart';
 
 import '../../../../core/formatters/upper_case_text_input_formatter.dart';
 import '../../../../core/logging/friction_logger.dart';
-import '../logic/compliance_cubit/compliance_cubit.dart';
+
 import '../widgets/header.dart';
 import '../widgets/labeled_text_field.dart';
 import '../widgets/status_banner.dart';
@@ -93,9 +94,10 @@ class _LsaVerificationScreenState extends State<LsaVerificationScreen> {
     );
   }
 
-  void _onReset(ComplianceCubit cubit) {
+  /// Wipes all volatile in-memory form input state on quarantine.
+  void _purgeVolatileMemory() {
     _consentController.clear();
-    cubit.reset();
+    _consentFocusNode.unfocus();
   }
 
   @override
@@ -137,10 +139,13 @@ class _LsaVerificationScreenState extends State<LsaVerificationScreen> {
               ),
               resizeToAvoidBottomInset: true,
               body: BlocConsumer<ComplianceCubit, ComplianceState>(
-                listener: (context, state) {},
+                listener: (context, state) {
+                  // Spec Case 3 Requirement: Instantly purge volatile memory & reset form state on Quarantine
+                  if (state is ComplianceQuarantined) {
+                    _purgeVolatileMemory();
+                  }
+                },
                 builder: (context, state) {
-                  // Track keyboard height so the scroll view can lift content
-                  // above the soft keyboard as the user focuses each field.
                   final keyboardHeight =
                       MediaQuery.viewInsetsOf(context).bottom;
 
@@ -152,8 +157,6 @@ class _LsaVerificationScreenState extends State<LsaVerificationScreen> {
                       left: 24,
                       right: 24,
                       top: 24,
-                      // Extra bottom room = keyboard height + normal padding.
-                      // When keyboard is hidden this collapses back to 24.
                       bottom: 24 + keyboardHeight,
                     ),
                     child: Column(
@@ -188,7 +191,7 @@ class _LsaVerificationScreenState extends State<LsaVerificationScreen> {
                         ),
                         const SizedBox(height: 20),
 
-                        // ── predecessor_id (system — always locked) ───
+                        // ── predecessor_id (system — read-only) ────────
                         LabeledTextField(
                           label: 'Predecessor ID',
                           controller: _predecessorController,
@@ -196,31 +199,11 @@ class _LsaVerificationScreenState extends State<LsaVerificationScreen> {
                         ),
                         const SizedBox(height: 32),
 
-                        // ── Primary action ─────────────────────────────
+                        // ── Primary action (Locked on Quarantined/Processing) ─
                         SubmitButton(
                           currentState: state,
                           onPressed: () => _onSubmit(cubit),
                         ),
-
-                        // ── Reset ──────────────────────────────────────
-                        if (state is ComplianceQuarantined ||
-                            state is ComplianceSuccess) ...[
-                          const SizedBox(height: 12),
-                          SizedBox(
-                            width: double.infinity,
-                            height: 48,
-                            child: OutlinedButton.icon(
-                              onPressed: () => _onReset(cubit),
-                              icon: const Icon(Icons.refresh_rounded, size: 18),
-                              label: const Text('Reset & Try Again'),
-                              style: OutlinedButton.styleFrom(
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
 
                         const SizedBox(height: 24),
 

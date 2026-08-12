@@ -1,10 +1,11 @@
 import 'package:dio/dio.dart';
 import 'api_log_interceptor.dart';
 import 'metadata_interceptor.dart';
+import 'mock_api_interceptor.dart';
 
 /// Class wrapping Dio HTTP client setup and options.
 ///
-/// Ensures no global instances or functions exist without class encapsulation.
+/// Encapsulates Dio instance, header injection, logging, and mock API adapter.
 class ApiClient {
   late final Dio _dio;
 
@@ -20,10 +21,13 @@ class ApiClient {
           ),
         );
 
-    // MetadataInterceptor first — injects headers before they are logged.
+    // 1. MetadataInterceptor: injects x-trace-id and x-logic-hash headers
     _dio.interceptors.add(MetadataInterceptor());
 
-    // ApiLogInterceptor second — logs the fully-enriched request + response.
+    // 2. MockApiInterceptor: simulates Case 1 (Valid), Case 2, Case 3 (Error/Null)
+    _dio.interceptors.add(MockApiInterceptor());
+
+    // 3. ApiLogInterceptor: logs the fully-enriched request and mock response
     _dio.interceptors.add(ApiLogInterceptor());
   }
 

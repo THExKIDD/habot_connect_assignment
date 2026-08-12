@@ -69,7 +69,7 @@ class ComplianceRepository {
     final status = data['status'];
     if (status == null) {
       throw const LineageException(
-        'API returned null status field — Data Quarantined — Compliance Failure.',
+        'Data Quarantined — Compliance Failure.',
       );
     }
 
@@ -99,10 +99,8 @@ class ComplianceRepository {
           'Security Gate Failure: Invalid SSL certificate — Request Terminated.',
         );
       case DioExceptionType.badResponse:
-        final statusCode = error.response?.statusCode;
-        final statusMessage = error.response?.statusMessage;
         return LineageException(
-          'HTTP $statusCode Error ($statusMessage) — Data Quarantined — Compliance Failure.',
+          'Data Quarantined — Compliance Failure.',
         );
       case DioExceptionType.cancel:
         return const LineageException(

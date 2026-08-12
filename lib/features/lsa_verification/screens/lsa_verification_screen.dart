@@ -135,11 +135,27 @@ class _LsaVerificationScreenState extends State<LsaVerificationScreen> {
                   ),
                 ),
               ),
+              resizeToAvoidBottomInset: true,
               body: BlocConsumer<ComplianceCubit, ComplianceState>(
                 listener: (context, state) {},
                 builder: (context, state) {
+                  // Track keyboard height so the scroll view can lift content
+                  // above the soft keyboard as the user focuses each field.
+                  final keyboardHeight =
+                      MediaQuery.viewInsetsOf(context).bottom;
+
                   return SingleChildScrollView(
-                    padding: const EdgeInsets.all(24),
+                    physics: const BouncingScrollPhysics(),
+                    keyboardDismissBehavior:
+                        ScrollViewKeyboardDismissBehavior.onDrag,
+                    padding: EdgeInsets.only(
+                      left: 24,
+                      right: 24,
+                      top: 24,
+                      // Extra bottom room = keyboard height + normal padding.
+                      // When keyboard is hidden this collapses back to 24.
+                      bottom: 24 + keyboardHeight,
+                    ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [

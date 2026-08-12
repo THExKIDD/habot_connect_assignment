@@ -3,27 +3,16 @@ import 'dart:developer' as dev;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:habot_connect_assignment/features/lsa_verification/logic/compliance_cubit/compliance_state.dart';
 
 import '../../../../core/logging/friction_logger.dart';
-import '../logic/compliance_cubit.dart';
-import '../models/compliance_state.dart';
+import '../logic/compliance_cubit/compliance_cubit.dart';
 import '../widgets/header.dart';
 import '../widgets/labeled_text_field.dart';
 import '../widgets/status_banner.dart';
 import '../widgets/submit_button.dart';
 
-/// Composition-only screen — assembles UI Byts and wires them to state.
-///
-/// Responsibilities of this layer ONLY:
-/// - Provide [ComplianceCubit] via [BlocProvider].
-/// - Hold [TextEditingController]s and [FocusNode]s (lifecycle only, not logic).
-/// - Wire the friction timer: attach a listener to [_consentFocusNode] that
-///   starts a debounce [Timer] on focus; if the user stalls > 5 s without
-///   typing or submitting, emit the friction log to the debug stream.
-/// - Forward user actions to [ComplianceCubit].
-///
-/// NO business logic here. No null checks, no validation, no API calls.
-/// All of that lives in the Cubit and Logic Byts.
+/// Composition-only screen layer — wires UI Byts to [ComplianceCubit].
 class LsaVerificationScreen extends StatefulWidget {
   const LsaVerificationScreen({super.key});
 
@@ -31,23 +20,17 @@ class LsaVerificationScreen extends StatefulWidget {
   State<LsaVerificationScreen> createState() => _LsaVerificationScreenState();
 }
 
-/// State is used ONLY for lifecycle management of controllers/timers/focus nodes.
-/// The UI itself rebuilds via BlocBuilder — no setState drives the visual tree.
 class _LsaVerificationScreenState extends State<LsaVerificationScreen> {
-  // ── System-prefilled field (read-only per spec) ──────────────────────
   static const String _kPredecessorId = 'PRED-9982-XYZ';
 
-  // ── Controllers ───────────────────────────────────────────────────────
   final TextEditingController _lsaIdController =
       TextEditingController(text: 'LSA-7049');
   final TextEditingController _consentController = TextEditingController();
   final TextEditingController _predecessorController =
       TextEditingController(text: _kPredecessorId);
 
-  // ── Focus node for friction logging ───────────────────────────────────
   final FocusNode _consentFocusNode = FocusNode();
 
-  // ── Friction timer ─────────────────────────────────────────────────────
   Timer? _frictionTimer;
   DateTime? _focusStartTime;
   static const Duration _frictionThreshold = Duration(seconds: 5);
@@ -59,8 +42,6 @@ class _LsaVerificationScreenState extends State<LsaVerificationScreen> {
     _consentController.addListener(_onConsentTextChanged);
   }
 
-  /// Starts the friction timer when the field gains focus;
-  /// cancels it when focus is lost.
   void _onConsentFocusChanged() {
     if (_consentFocusNode.hasFocus) {
       _focusStartTime = DateTime.now();
@@ -70,7 +51,6 @@ class _LsaVerificationScreenState extends State<LsaVerificationScreen> {
     }
   }
 
-  /// Any keystroke resets the friction timer — the user is actively typing.
   void _onConsentTextChanged() {
     if (_consentFocusNode.hasFocus) {
       _cancelFrictionTimer();
@@ -87,27 +67,21 @@ class _LsaVerificationScreenState extends State<LsaVerificationScreen> {
     _frictionTimer = null;
   }
 
-  /// Fired by the timer when the user has stalled for > 5 seconds.
-  /// Calls the pure [buildFrictionLog] Logic Byt for formatting,
-  /// then outputs to the debug stream — side effect stays here.
   void _emitFrictionLog() {
     final hesitation = _focusStartTime != null
         ? DateTime.now().difference(_focusStartTime!)
         : _frictionThreshold;
 
-    final logLine = buildFrictionLog(
+    final logLine = FrictionLogger.buildLog(
       hesitation: hesitation,
       fieldName: 'parent_consent_code',
     );
 
-    // Output to debug console / stream (visible in flutter logs).
     dev.log(logLine, name: 'UI_FRICTION');
-    // ignore: avoid_print
     debugPrint(logLine);
   }
 
   void _onSubmit(ComplianceCubit cubit) {
-    // Cancel friction timer on submit — user took action.
     _cancelFrictionTimer();
     cubit.verify(
       predecessorId: _predecessorController.text.trim().isEmpty
@@ -161,10 +135,7 @@ class _LsaVerificationScreenState extends State<LsaVerificationScreen> {
                 ),
               ),
               body: BlocConsumer<ComplianceCubit, ComplianceState>(
-                listener: (context, state) {
-                  // BlocListener handles side-effects like snackbars/navigation.
-                  // Currently no navigation side-effect needed.
-                },
+                listener: (context, state) {},
                 builder: (context, state) {
                   return SingleChildScrollView(
                     padding: const EdgeInsets.all(24),
@@ -178,7 +149,7 @@ class _LsaVerificationScreenState extends State<LsaVerificationScreen> {
                         StatusBanner(state: state),
                         const SizedBox(height: 28),
 
-                        // ── lsa_id (prefilled, editable) ───────────────
+                        // ── lsa_id ────────────────────────────────────
                         LabeledTextField(
                           label: 'LSA Identifier',
                           hint: 'e.g. LSA-7049',
@@ -187,7 +158,7 @@ class _LsaVerificationScreenState extends State<LsaVerificationScreen> {
                         ),
                         const SizedBox(height: 20),
 
-                        // ── parent_consent_code (user-entered) ─────────
+                        // ── parent_consent_code ───────────────────────
                         LabeledTextField(
                           label: 'Parent Consent Code',
                           hint: 'Enter code — e.g. PCC-2026-9901',
@@ -197,7 +168,7 @@ class _LsaVerificationScreenState extends State<LsaVerificationScreen> {
                         ),
                         const SizedBox(height: 20),
 
-                        // ── predecessor_id (system, read-only) ──────────
+                        // ── predecessor_id ────────────────────────────
                         LabeledTextField(
                           label: 'Predecessor ID (System)',
                           hint: 'System-assigned lineage reference',
@@ -212,7 +183,7 @@ class _LsaVerificationScreenState extends State<LsaVerificationScreen> {
                           onPressed: () => _onSubmit(cubit),
                         ),
 
-                        // ── Reset (visible after quarantine or success) ─
+                        // ── Reset ──────────────────────────────────────
                         if (state is ComplianceQuarantined ||
                             state is ComplianceSuccess) ...[
                           const SizedBox(height: 12),
@@ -234,7 +205,6 @@ class _LsaVerificationScreenState extends State<LsaVerificationScreen> {
 
                         const SizedBox(height: 24),
 
-                        // ── Debug info card (shows trace ID for demo) ──
                         if (state is ComplianceSuccess)
                           _DebugInfoCard(traceId: state.traceId),
                       ],
@@ -250,8 +220,6 @@ class _LsaVerificationScreenState extends State<LsaVerificationScreen> {
   }
 }
 
-/// UI Byt — debug information card shown in Success state for the demo.
-/// Displays the x-trace-id for audit reference.
 class _DebugInfoCard extends StatelessWidget {
   final String traceId;
 

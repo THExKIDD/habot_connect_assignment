@@ -1,22 +1,42 @@
 import 'package:dio/dio.dart';
 import 'metadata_interceptor.dart';
 
-/// Singleton Dio instance pre-configured for the HabotConnect compliance API.
+/// Class wrapping Dio HTTP client setup and options.
 ///
-/// The [MetadataInterceptor] is attached here so that *every* request made
-/// through this client automatically carries [x-trace-id] and [x-logic-hash]
-/// — there is no per-call path that can bypass the headers.
-Dio buildApiClient() {
-  final dio = Dio(
-    BaseOptions(
-      baseUrl: 'https://api.habotconnect.com',
-      contentType: 'application/json',
-      connectTimeout: const Duration(seconds: 15),
-      receiveTimeout: const Duration(seconds: 15),
-    ),
-  );
+/// Ensures no global instances or functions exist without class encapsulation.
+class ApiClient {
+  late final Dio _dio;
 
-  dio.interceptors.add(MetadataInterceptor());
+  ApiClient({Dio? dio}) {
+    _dio = dio ??
+        Dio(
+          BaseOptions(
+            baseUrl: 'https://api.habotconnect.com',
+            contentType: 'application/json',
+            connectTimeout: const Duration(seconds: 15),
+            receiveTimeout: const Duration(seconds: 15),
+            sendTimeout: const Duration(seconds: 15),
+          ),
+        );
 
-  return dio;
+    _dio.interceptors.add(MetadataInterceptor());
+  }
+
+  /// Returns underlying Dio instance.
+  Dio get client => _dio;
+
+  /// Executes HTTP POST with mandatory header extra parameters.
+  Future<Response<T>> post<T>(
+    String path, {
+    Object? data,
+    Map<String, dynamic>? queryParameters,
+    Options? options,
+  }) async {
+    return await _dio.post<T>(
+      path,
+      data: data,
+      queryParameters: queryParameters,
+      options: options,
+    );
+  }
 }

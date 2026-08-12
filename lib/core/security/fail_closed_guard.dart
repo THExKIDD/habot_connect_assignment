@@ -1,18 +1,25 @@
-import '../../../features/lsa_verification/models/lineage_exception.dart';
 
-/// Security Byt — generic fail-closed null guard.
+import 'package:habot_connect_assignment/core/exceptions/lineage_exception.dart';
+
+/// Class encapsulating generic fail-closed security guards.
 ///
-/// Returns [value] if it is non-null; otherwise throws immediately.
-/// Use this as the canonical "halt on null" utility so every check
-/// site in the codebase communicates its intent uniformly.
-///
-/// Example:
-/// ```dart
-/// final id = guardNotNull(rawId, 'predecessor_id must not be null');
-/// ```
-T guardNotNull<T>(T? value, String reason) {
-  if (value == null) {
-    throw LineageException(reason);
+/// Prevents global top-level functions and provides strict null/empty checks.
+abstract final class FailClosedGuard {
+  FailClosedGuard._();
+
+  /// Returns [value] if non-null; otherwise throws [LineageException].
+  static T guardNotNull<T>(T? value, String reason) {
+    if (value == null) {
+      throw LineageException(reason);
+    }
+    return value;
   }
-  return value;
+
+  /// Validates string is non-null and non-empty.
+  static String guardNotEmpty(String? value, String fieldName) {
+    if (value == null || value.trim().isEmpty) {
+      throw LineageException('$fieldName must not be null or empty.');
+    }
+    return value.trim();
+  }
 }

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../models/compliance_state.dart';
+import '../logic/compliance_cubit/compliance_state.dart';
 
 /// UI Byt — the "Verify & Submit" action button.
 ///

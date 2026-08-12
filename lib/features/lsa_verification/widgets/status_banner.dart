@@ -33,8 +33,8 @@ class StatusBanner extends StatelessWidget {
           _ProcessingBanner(key: const ValueKey('processing')),
         ComplianceQuarantined(:final reason) =>
           _QuarantinedBanner(key: const ValueKey('quarantined'), reason: reason),
-        ComplianceSuccess(:final traceId) =>
-          _SuccessBanner(key: const ValueKey('success'), traceId: traceId),
+        ComplianceSuccess() =>
+          const _SuccessBanner(key: ValueKey('success')),
       },
     );
   }
@@ -57,7 +57,7 @@ class _IdleBanner extends StatelessWidget {
         end: Alignment.bottomRight,
       ),
       borderColor: const Color(0xFF90A4AE).withValues(alpha: 0.4),
-      icon: _StatusDot(color: const Color(0xFF78909C)),
+      icon: const _StatusDot(color: Color(0xFF78909C)),
       label: 'System Idle',
       sublabel: 'Ready for LSA onboarding verification',
       labelColor: const Color(0xFF546E7A),
@@ -125,7 +125,7 @@ class _ProcessingBannerState extends State<_ProcessingBanner>
             ),
           ),
           label: 'Verifying Compliance…',
-          sublabel: 'Transmitting payload with metadata headers',
+          sublabel: 'Transmitting onboarding payload to compliance gate',
           labelColor: const Color(0xFF1565C0),
           sublabelColor: const Color(0xFF42A5F5),
         );
@@ -181,8 +181,7 @@ class _QuarantinedBanner extends StatelessWidget {
 // ─────────────────────────── SUCCESS ─────────────────────────────────────────
 
 class _SuccessBanner extends StatelessWidget {
-  final String traceId;
-  const _SuccessBanner({super.key, required this.traceId});
+  const _SuccessBanner({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -213,8 +212,8 @@ class _SuccessBanner extends StatelessWidget {
         ),
         child: const Icon(Icons.verified_rounded, color: Colors.white, size: 14),
       ),
-      label: 'COMPLIANCE VERIFIED',
-      sublabel: 'Trace ID: $traceId',
+      label: 'VERIFICATION APPROVED',
+      sublabel: 'LSA onboarding data compliance verified',
       labelColor: const Color(0xFF1B5E20),
       sublabelColor: const Color(0xFF388E3C),
     );
@@ -257,13 +256,11 @@ class _BannerShell extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Icon column
           Padding(
             padding: const EdgeInsets.only(top: 1),
             child: icon,
           ),
           const SizedBox(width: 14),
-          // Text column
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,

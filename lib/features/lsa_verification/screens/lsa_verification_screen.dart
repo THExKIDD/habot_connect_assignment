@@ -3,12 +3,11 @@ import 'dart:developer' as dev;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:habot_connect_assignment/features/lsa_verification/logic/compliance_cubit/compliance_cubit.dart';
-import 'package:habot_connect_assignment/features/lsa_verification/logic/compliance_cubit/compliance_state.dart';
 
 import '../../../../core/formatters/upper_case_text_input_formatter.dart';
 import '../../../../core/logging/friction_logger.dart';
-
+import '../logic/compliance_cubit/compliance_cubit.dart';
+import '../logic/compliance_cubit/compliance_state.dart';
 import '../widgets/header.dart';
 import '../widgets/labeled_text_field.dart';
 import '../widgets/status_banner.dart';
@@ -34,7 +33,6 @@ class _LsaVerificationScreenState extends State<LsaVerificationScreen> {
   final FocusNode _consentFocusNode = FocusNode();
 
   Timer? _frictionTimer;
-  DateTime? _focusStartTime;
   static const Duration _frictionThreshold = Duration(seconds: 5);
 
   @override
@@ -46,7 +44,6 @@ class _LsaVerificationScreenState extends State<LsaVerificationScreen> {
 
   void _onConsentFocusChanged() {
     if (_consentFocusNode.hasFocus) {
-      _focusStartTime = DateTime.now();
       _startFrictionTimer();
     } else {
       _cancelFrictionTimer();
@@ -70,12 +67,8 @@ class _LsaVerificationScreenState extends State<LsaVerificationScreen> {
   }
 
   void _emitFrictionLog() {
-    final hesitation = _focusStartTime != null
-        ? DateTime.now().difference(_focusStartTime!)
-        : _frictionThreshold;
-
     final logLine = FrictionLogger.buildLog(
-      hesitation: hesitation,
+      hesitation: _frictionThreshold,
       fieldName: 'parent_consent_code',
     );
 
@@ -199,16 +192,11 @@ class _LsaVerificationScreenState extends State<LsaVerificationScreen> {
                         ),
                         const SizedBox(height: 32),
 
-                        // ── Primary action (Locked on Quarantined/Processing) ─
+                        // ── Primary action ─────────────────────────────
                         SubmitButton(
                           currentState: state,
                           onPressed: () => _onSubmit(cubit),
                         ),
-
-                        const SizedBox(height: 24),
-
-                        if (state is ComplianceSuccess)
-                          _DebugInfoCard(traceId: state.traceId),
                       ],
                     ),
                   );
@@ -217,88 +205,6 @@ class _LsaVerificationScreenState extends State<LsaVerificationScreen> {
             ),
           );
         },
-      ),
-    );
-  }
-}
-
-class _DebugInfoCard extends StatelessWidget {
-  final String traceId;
-
-  const _DebugInfoCard({required this.traceId});
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final tt = Theme.of(context).textTheme;
-
-    final gradientColors = isDark
-        ? [const Color(0xFF0D1F17), const Color(0xFF0A1810)]
-        : [const Color(0xFFE8F5E9), const Color(0xFFF1F8E9)];
-
-    const accentGreen = Color(0xFF43A047);
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: gradientColors,
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: accentGreen.withValues(alpha: 0.35),
-          width: 1.2,
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  color: accentGreen.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: const Icon(
-                  Icons.receipt_long_rounded,
-                  size: 14,
-                  color: accentGreen,
-                ),
-              ),
-              const SizedBox(width: 10),
-              Text(
-                'Audit Trail',
-                style: tt.labelMedium?.copyWith(
-                  color: accentGreen,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 0.5,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Text(
-            'x-trace-id',
-            style: tt.labelSmall?.copyWith(
-              color: accentGreen.withValues(alpha: 0.7),
-              letterSpacing: 0.4,
-            ),
-          ),
-          const SizedBox(height: 4),
-          SelectableText(
-            traceId,
-            style: tt.bodySmall?.copyWith(
-              fontFamily: 'monospace',
-              color: isDark ? const Color(0xFFA5D6A7) : const Color(0xFF2E7D32),
-              letterSpacing: 0.6,
-            ),
-          ),
-        ],
       ),
     );
   }

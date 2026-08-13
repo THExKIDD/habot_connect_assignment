@@ -5,6 +5,7 @@ import 'package:habot_connect_assignment/core/exceptions/lineage_exception.dart'
 import '../../../../core/network/api_client.dart';
 import '../../../../core/network/metadata_interceptor.dart';
 import '../models/verification_request.dart';
+import '../models/verification_response_dto.dart';
 
 /// Repository layer — manages compliance verification endpoint communication.
 ///
@@ -21,7 +22,7 @@ class ComplianceRepository {
   /// Production error handling guarantees that timeouts, connection failures,
   /// malformed JSON, and server error responses are intercepted and mapped into
   /// strict, explicit fail-closed exceptions.
-  Future<void> verifyCompliance({
+  Future<VerificationResponseDto> verifyCompliance({
     required VerificationRequest request,
     required String traceId,
     required String logicHash,
@@ -38,7 +39,7 @@ class ComplianceRepository {
         ),
       );
 
-      _validateResponseData(response);
+      return VerificationResponseDto.fromJson(response.data);
     } on DioException catch (e) {
       throw _handleDioException(e);
     } on SocketException catch (e) {
@@ -54,28 +55,6 @@ class ComplianceRepository {
       throw LineageException(
         'Unexpected Pipeline Failure: $e — Data Quarantined.',
       );
-    }
-  }
-
-  /// Production validation of response body format and required fields.
-  void _validateResponseData(Response<Map<String, dynamic>> response) {
-    final data = response.data;
-    if (data == null) {
-      throw const LineageException(
-        'API returned null response body — Fail-closed quarantine triggered.',
-      );
-    }
-
-    final status = data['status'];
-    if (status == null) {
-      throw const LineageException(
-        'Data Quarantined — Compliance Failure.',
-      );
-    }
-
-    if (status is String && status.toLowerCase() == 'quarantined') {
-      final message = data['message'] as String? ?? 'Compliance check failed at gateway.';
-      throw LineageException('Gate Quarantine: $message');
     }
   }
 

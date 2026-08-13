@@ -46,14 +46,30 @@ class ComplianceCubit extends Cubit<ComplianceState> {
     // ── Step 3: Transition UI to Processing ─────────────────────────────
     emit(const ComplianceProcessing());
 
-    // ── Step 4: Execute Repository Request ────────────────────────────────
+    // ── Step 4: Execute Repository Request & Validate Response Status ─────
     try {
-      await _repository.verifyCompliance(
+      final responseDto = await _repository.verifyCompliance(
         request: request,
         traceId: headers.traceId,
         logicHash: headers.logicHash,
       );
-      emit(ComplianceSuccess(headers.traceId));
+
+      if (responseDto.isQuarantined) {
+        final message =
+            responseDto.message ?? 'Compliance check failed at gateway.';
+        emit(ComplianceQuarantined('Gate Quarantine: $message'));
+        return;
+      }
+
+      if (responseDto.isSuccess) {
+        emit(ComplianceSuccess(headers.traceId));
+        return;
+      }
+
+      // Default quarantine fallback for unrecognized status payloads
+      emit(ComplianceQuarantined(
+        responseDto.message ?? 'Data Quarantined — Compliance Failure.',
+      ));
     } on LineageException catch (e) {
       // Production fail-closed halt: display formatted quarantine reason
       emit(ComplianceQuarantined(e.message));
